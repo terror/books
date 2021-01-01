@@ -1,52 +1,46 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import db from '../index';
 import { IVolume } from '../interfaces';
+import { statusCodes } from '../config/statusCodes';
 
 const router = express.Router();
 
-// GET all volumes
-router.get('/', (_, res) => {
+// @type GET
+// @desc Route for retrieving all volumes in the collection
+// @route /api/volumes
+// @access public
+router.get('/', (_, res: Response) => {
     db.collection('volumes')
+        .orderBy('updated', 'desc')
         .get()
         .then((result) => {
             const response: IVolume[] = [];
             result.forEach((doc) => {
                 response.push(doc.data() as IVolume);
             });
-            res.status(200).send(response);
+            res.status(statusCodes.SUCCESS).send(response);
         })
         .catch((err) => {
-            res.status(500).send(err);
+            res.status(statusCodes.SERVER_ERROR).send(err);
         });
 });
 
-// GET a single volume
-router.get('/:id', (req, res) => {
+// @type GET
+// @desc Route for retrieving a specific volume from the collection
+// @route /api/volumes/:id
+// @access public
+router.get('/:id', (req: Request, res: Response) => {
     const doc = db.collection('volumes').doc(req.params.id);
     doc.get()
         .then((doc) => {
-            if (doc.exists) res.status(200).send(doc.data());
-            else res.status(404).send('No such document found.');
+            if (doc.exists) res.status(statusCodes.SUCCESS).send(doc.data());
+            else
+                res.status(statusCodes.NOT_FOUND).send(
+                    'No such document exists.'
+                );
         })
         .catch((err) => {
-            res.status(500).send(err);
-        });
-});
-
-// POST a single volume
-router.post('/', (req, res) => {
-    db.collection('volumes')
-        .doc(String(req.body.id))
-        .set({
-            title: req.body.title,
-            author: req.body.author,
-            link: req.body.link,
-        })
-        .then(() => {
-            res.status(200).send(`Document written with ID: ${req.body.id}`);
-        })
-        .catch((err) => {
-            res.status(500).send(err);
+            res.status(statusCodes.SERVER_ERROR).send(err);
         });
 });
 

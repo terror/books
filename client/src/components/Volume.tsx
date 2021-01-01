@@ -1,11 +1,12 @@
-import React from "react";
+import React from 'react';
 
 const Volume = (props: any) => {
+    const { title, author, link } = props.item;
     return (
         <div>
-            <h1>{props.item.title}</h1>
-            <h2>{props.item.author}</h2>
-            <h3>{props.item.link}</h3>
+            <h1>{title}</h1>
+            <h2>{author}</h2>
+            <h3>{link}</h3>
         </div>
     );
 };

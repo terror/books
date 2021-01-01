@@ -2,7 +2,9 @@ interface IVolume {
     id: number; // readwise ID
     title: string;
     author: string;
-    link: string;
+    category: string;
+    updated: Date;
+    image_url: string;
 }
 
 interface IHighlight {
@@ -28,7 +30,7 @@ interface IReadwiseVolume {
     id: number;
     title: string;
     author: string;
-    catory: string;
+    category: string;
     num_highlights: number;
     last_highlight_at: Date;
     updated: Date;

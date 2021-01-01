@@ -1,6 +1,7 @@
 export interface IVolume {
-    id: string,
+    id: string;
     title: string;
     author: string;
-    link: string;
+    category: string;
+    image_url: string;
 }

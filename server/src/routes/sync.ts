@@ -1,104 +1,103 @@
-import express from 'express';
+import express, { Response } from 'express';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
 import db from '../index';
-import {
-    IHighlight,
-    IVolume,
-    IReadwiseHighlight,
-    IReadwiseVolume,
-} from '../interfaces';
+import { IReadwiseHighlight, IReadwiseVolume } from '../interfaces';
+import { statusCodes } from '../config/statusCodes';
 dotenv.config();
 
 const router = express.Router();
 
-// Fetch and update all books
-router.post('/volumes', (_, res) => {
+// @type POST
+// @desc Route for syncing readwise volumes with the collections volumes
+// @route /api/sync/volumes
+// @access public
+router.post('/volumes', (_, res: Response) => {
     const URL = 'https://readwise.io/api/v2/books/';
     const populateData = (URL: string) => {
         fetch(URL, {
             method: 'GET',
             headers: {
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                Authorization: 'Token ' + process.env.READWISE_TOKEN!,
+                Authorization: 'Token ' + process.env.READWISE_TOKEN,
             },
         })
             .then((response) => response.json())
             .then((response) => {
                 response.results.forEach(async (volume: IReadwiseVolume) => {
-                    db.collection('volumes')
+                    const snap = await db
+                        .collection('volumes')
                         .where('id', '==', volume.id)
-                        .get()
-                        .then((snap) => {
-                            if (snap.empty) {
-                                const data: IVolume = {
-                                    id: volume.id,
-                                    title: volume.title,
-                                    author: volume.author,
-                                    link: volume.cover_image_url,
-                                };
-                                fetch(process.env.API_URL + 'volumes', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify(data),
-                                });
-                            }
+                        .get();
+                    if (
+                        snap.empty ||
+                        (!snap.empty &&
+                            snap.docs[0].data()['updated'] != volume.updated)
+                    ) {
+                        db.collection('volumes').doc(String(volume.id)).set({
+                            title: volume.title,
+                            author: volume.author,
+                            category: volume.category,
+                            updated: volume.updated,
+                            image_url: volume.cover_image_url,
                         });
+                    }
                     if (response.next) populateData(response.next);
                 });
             })
             .catch((err) => {
-                res.status(500).send(`Error: ${err}`);
+                throw new Error(err);
             });
     };
-    populateData(URL);
-    res.status(200).send('Books updated successfully');
+    try {
+        populateData(URL);
+        res.status(statusCodes.SUCCESS).send('Books updated successfully');
+    } catch (err) {
+        res.status(statusCodes.SERVER_ERROR).send(err);
+    }
 });
 
-// Fetch and update all highlights
+// @type POST
+// @desc Route for syncing readwise highlights with the collections highlights
+// @route /api/sync/highlights
+// @access public
 router.post('/highlights', (_, res) => {
     const URL = 'https://readwise.io/api/v2/highlights/';
     const populateData = (URL: string) => {
         fetch(URL, {
             method: 'GET',
             headers: {
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                Authorization: 'Token ' + process.env.READWISE_TOKEN!,
+                Authorization: 'Token ' + process.env.READWISE_TOKEN,
             },
         })
             .then((response) => response.json())
             .then((response) => {
-                response.results.forEach((highlight: IReadwiseHighlight) => {
-                    db.collection('highlights')
-                        .where('id', '==', highlight.id)
-                        .get()
-                        .then((snap) => {
-                            if (snap.empty) {
-                                const data: IHighlight = {
-                                    id: highlight.id,
-                                    text: highlight.text,
-                                    volume: highlight.book_id,
-                                };
-                                fetch(process.env.API_URL + 'highlights', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify(data),
-                                });
-                            }
-                        });
-                    if (response.next) populateData(response.next);
-                });
+                response.results.forEach(
+                    async (highlight: IReadwiseHighlight) => {
+                        const snap = await db
+                            .collection('highlights')
+                            .where('id', '==', highlight.id)
+                            .get();
+                        if (snap.empty) {
+                            db.collection('highlights').add({
+                                id: highlight.id,
+                                text: highlight.text,
+                                volume: highlight.book_id,
+                            });
+                        }
+                        if (response.next) populateData(response.next);
+                    }
+                );
             })
             .catch((err) => {
-                res.status(500).send(`Error: ${err}`);
+                throw new Error(err);
             });
     };
-    populateData(URL);
-    res.status(200).send('Highlights synced successfully');
+    try {
+        populateData(URL);
+        res.status(statusCodes.SUCCESS).send('Highlights synced successfully');
+    } catch (err) {
+        res.status(statusCodes.SERVER_ERROR).send(err);
+    }
 });
 
 export default router;
