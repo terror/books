@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { IVolume } from '../interfaces';
+import { Link } from 'react-router-dom';
 import {
     SimpleGrid,
     Image,
@@ -54,14 +55,16 @@ const Home = () => {
             const { image_url, title } = item;
             return (
                 <Stack>
-                    <Image
-                        _hover={{
-                            boxShadow:
-                                '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)',
-                        }}
-                        maxW="150px"
-                        src={image_url}
-                    ></Image>
+                    <Link to={`/volumes/${item.id}`}>
+                        <Image
+                            _hover={{
+                                boxShadow:
+                                    '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)',
+                            }}
+                            maxW="150px"
+                            src={image_url}
+                        ></Image>
+                    </Link>
                     <Text
                         maxWidth="150px"
                         noOfLines={3}

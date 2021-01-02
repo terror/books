@@ -34,6 +34,7 @@ router.post('/volumes', (_, res: Response) => {
                             snap.docs[0].data()['updated'] != volume.updated)
                     ) {
                         db.collection('volumes').doc(String(volume.id)).set({
+                            id: volume.id,
                             title: volume.title,
                             author: volume.author,
                             category: volume.category,

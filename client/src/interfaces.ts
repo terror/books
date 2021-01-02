@@ -5,3 +5,9 @@ export interface IVolume {
     category: string;
     image_url: string;
 }
+
+export interface IHighlight {
+    id: number; // readwise ID
+    highlight: string;
+    volume: number;
+}
